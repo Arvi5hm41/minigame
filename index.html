@@ -2,15 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Mystic Journey</title>
+  <title>Mystic Path Minigame</title>
   <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <style>
     body {
       background:black;
       color:white;
-      font-family:"VT323", monospace;
-      font-size:6vw;  /* bigger text everywhere */
+      font-family:"VT323",monospace;
+      font-size:5.2vw;
       display:flex;
       align-items:center;
       justify-content:center;
@@ -30,32 +29,28 @@
 
     #text {
       white-space:pre-wrap;
-      min-height:25vh;   /* more space for long text */
-      font-size:7vw;     /* bigger questions */
-      line-height:1.4;
+      min-height:20vh;
+      font-size:5.8vw;
+      line-height:1.3;
     }
 
     #choices { margin-top:5vh; }
 
     .choice {
       margin:3vw;
-      padding:4vw 6vw;   /* bigger buttons */
+      padding:2.6vw 5.2vw;
       border:1px solid white;
       display:inline-block;
       cursor:pointer;
-      font-size:6vw;     /* bigger choice text */
-      border-radius:10px;
+      font-size:5.2vw;
+      border-radius:8px;
       transition: all 0.2s ease-in-out;
     }
-
-    /* Hover for desktop */
     .choice:hover {
       color:black;
       background:white;
       box-shadow:0 0 15px white;
     }
-
-    /* Touch active for phones */
     .choice:active {
       color:black;
       background:white;
@@ -63,7 +58,12 @@
       transform:scale(1.05);
     }
 
-    /* Pixel star background */
+    .glow { animation: glow 2s infinite alternate; }
+    @keyframes glow {
+      from { text-shadow:0 0 4px white; }
+      to   { text-shadow:0 0 20px white; }
+    }
+
     .pixel {
       position:absolute;
       width:3px;
@@ -79,70 +79,200 @@
       to   { opacity:1; transform:scale(1.5); }
     }
 
-    /* For very small phones */
+    .symbol {
+      font-size: 15vw;
+      margin: 20px 0;
+      animation: pulse 3s infinite alternate;
+    }
+    @keyframes pulse {
+      from { text-shadow: 0 0 5px white, 0 0 10px white; }
+      to   { text-shadow: 0 0 20px white, 0 0 40px white; }
+    }
+
+    .result-title { font-size: 6vw; margin: 10px 0; }
+    .result-desc { font-size: 4.5vw; margin-top: 10px; line-height: 1.4; }
+
     @media (max-width:600px) {
-      body { font-size:7vw; }
-      #text { font-size:8vw; }
-      .choice { font-size:7vw; padding:5vw 7vw; }
+      body { font-size:5vw; }
+      #text { font-size:5vw; }
+      .choice { font-size:5vw; padding:3vw 6vw; }
+    }
+
+    /* Fullscreen button */
+    #fullscreen-btn {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid white;
+      color: white;
+      padding: 6px 12px;
+      font-size: 4vw;
+      cursor: pointer;
+      z-index: 9999;
+      border-radius: 6px;
+      transition: all 0.2s ease-in-out;
+    }
+    #fullscreen-btn:hover, #fullscreen-btn:active {
+      background: white;
+      color: black;
+      box-shadow: 0 0 10px white;
     }
   </style>
 </head>
 <body>
+  <button id="fullscreen-btn">⛶</button>
   <div id="game">
     <div id="text"></div>
     <div id="choices"></div>
   </div>
   <script>
-    const text = document.getElementById("text");
-    const choices = document.getElementById("choices");
+  const text=document.getElementById("text");
+  const choices=document.getElementById("choices");
+  let busy=false,currentPath=[],currentLevel=0;
 
-    function typeText(str, cb){
-      let i=0;
-      text.innerHTML="";
-      function step(){
-        if(i<str.length){
-          text.innerHTML+=str[i++];
-          setTimeout(step, 50);
-        } else if(cb) cb();
-      }
-      step();
+  const ARCHETYPES = [
+    { key:"Stoic Swordsman", title:"⚔ The Stoic Swordsman", symbol:"⚔",
+      desc:"Steel is a mirror of the soul. You sever illusions with clarity and solemn resolve." },
+    { key:"Trickster Rogue", title:"🃏 The Trickster Rogue", symbol:"🃏",
+      desc:"Rules are chains. You laugh as you slip them, turning fate into a jest." },
+    { key:"Loyal Protector", title:"🛡 The Loyal Protector", symbol:"🛡",
+      desc:"Your heart is both flame and shield. You endure so others may stand." },
+    { key:"Eternal Scholar", title:"📜 The Eternal Scholar", symbol:"📜",
+      desc:"The halls of truth have no end. You wander them eternally, hungering for wisdom." },
+    { key:"Shadow Wanderer", title:"🌑 The Shadow Wanderer", symbol:"🌑",
+      desc:"You walk unseen, carrying silence and scars as companions." },
+    { key:"Burning Hero", title:"🔥 The Burning Hero", symbol:"🔥",
+      desc:"Passion blazes in you. Even gods cannot snuff your fire." },
+    { key:"Silent Oracle", title:"🔮 The Silent Oracle", symbol:"🔮",
+      desc:"You perceive the whispers between moments. Your silence speaks louder than prophecy." },
+    { key:"Cosmic Dreamer", title:"🌌 The Cosmic Dreamer", symbol:"🌌",
+      desc:"Worlds bloom from your thoughts. You shape infinity with your visions." }
+  ];
+
+  const QUESTIONS=[
+    ["Four roads stretch before you — which stirs your soul?","Strength","Wisdom","Loyalty","Dreams"],
+    ["Steel or shadow, which do you trust more?","Blade","Hidden paths","Shared oath","Cosmic vision"],
+    ["The night whispers — do you seek?","Clarity","Mysteries","Companions","Infinite skies"],
+    ["Before battle, what heart do you carry?","Resolve","Cunning","Sacrifice","Imagination"],
+    ["The final step reveals your essence — what guides you?","Discipline","Freedom","Devotion","Transcendence"]
+  ];
+
+  function typeText(str,cb){
+    busy=true;text.innerHTML="";
+    let i=0;
+    function step(){
+      if(i<str.length){text.innerHTML+=str[i++];setTimeout(step,30);}
+      else{busy=false;if(cb)cb();}
     }
+    step();
+  }
+  function clearChoices(){choices.innerHTML="";}
 
-    function showChoices(opts){
-      choices.innerHTML="";
-      opts.forEach(opt=>{
-        const div=document.createElement("div");
-        div.className="choice";
-        div.textContent=opt;
-        div.onclick=()=>pick(opt);
-        choices.appendChild(div);
-      });
-    }
+  function showChoices(opts){
+    clearChoices();
+    opts.forEach((o,i)=>{
+      const div=document.createElement("div");
+      div.className="choice glow";
+      div.textContent=o;
+      div.onclick=()=>{ if(!busy) handleChoice(i,o); };
+      choices.appendChild(div);
+    });
+  }
 
-    function clearChoices(){ choices.innerHTML=""; }
-
-    function pick(opt){
-      if(opt==="Restart the journey") start();
-      else if(opt==="End") typeText("✨ The journey fades into starlight... ✨");
-      else typeText("You chose: "+opt, ()=>showChoices(["Restart the journey","End"]));
-    }
-
-    function start(){
+  function handleChoice(i,label){
+    if(currentLevel===0 && label.startsWith("No")){
       clearChoices();
-      typeText("📲 [Stranger]: Greetings, wanderer of fate...\nDo you dare step into the game?", 
-        ()=>showChoices(["Yes","No"]));
+      typeText("⚡ The connection severs. The path remains closed.\n\n(Refresh to try again.)");
+      return;
+    }
+    if(currentLevel===0 && label.startsWith("Yes")){
+      currentPath.push(i);currentLevel=0;navigate();return;
+    }
+    if(label.startsWith("Restart")){
+      startGame();
+      return;
+    }
+    if(label.startsWith("End")){
+      clearChoices();
+      typeText("🌙 The journey sleeps, until another soul awakens it.");
+      return;
     }
 
-    // Background pixel stars
-    for(let i=0;i<150;i++){
-      const s=document.createElement("div");
-      s.className="pixel";
-      s.style.top=Math.random()*100+"vh";
-      s.style.left=Math.random()*100+"vw";
-      document.body.appendChild(s);
-    }
+    currentPath.push(i);currentLevel++;
+    if(currentLevel>=QUESTIONS.length) finish();
+    else navigate();
+  }
 
-    start();
+  function navigate(){
+    clearChoices();
+    const q=QUESTIONS[currentLevel];
+    typeText(q[0],()=>showChoices(q.slice(1)));
+  }
+
+  function finish(){
+    const archetype=ARCHETYPES[Math.floor(Math.random()*ARCHETYPES.length)];
+    clearChoices();
+    text.innerHTML = ""; 
+
+    const symbolDiv = document.createElement("div");
+    symbolDiv.className = "symbol glow";
+    symbolDiv.textContent = archetype.symbol;
+    text.appendChild(symbolDiv);
+
+    setTimeout(() => {
+      const titleDiv = document.createElement("div");
+      titleDiv.className = "result-title glow";
+      titleDiv.textContent = "✨ " + archetype.title + " ✨";
+      text.appendChild(titleDiv);
+
+      setTimeout(() => {
+        const descDiv = document.createElement("div");
+        descDiv.className = "result-desc";
+        descDiv.textContent = archetype.desc;
+        text.appendChild(descDiv);
+
+        setTimeout(() => {
+          showChoices(["Restart the journey","End"]);
+        }, 1000);
+      }, 1000);
+    }, 1000);
+  }
+
+  function startGame(){
+    currentPath=[];currentLevel=0;
+    const intro="📲 A message flickers to life...\n\nA presence asks, with patience carved in centuries:\n\n'Do you dare to tread the path of fivefold questions?'";
+    typeText(intro,()=>showChoices([
+      "Yes — I step forth.",
+      "No — I turn away."
+    ]));
+  }
+
+  (function spawnPixels(){
+    for(let i=0;i<120;i++){
+      const p=document.createElement("div");
+      p.className="pixel";
+      p.style.left=Math.random()*100+"vw";
+      p.style.top=Math.random()*100+"vh";
+      p.style.animationDuration=(2+Math.random()*4)+"s";
+      p.style.animationDelay=(Math.random()*5)+"s";
+      document.body.appendChild(p);
+    }
+  })();
+
+  startGame();
+
+  // Fullscreen toggle
+  const fsBtn=document.getElementById("fullscreen-btn");
+  fsBtn.addEventListener("click",()=>{
+    if(!document.fullscreenElement){
+      document.documentElement.requestFullscreen().catch(err=>{
+        alert(`Error: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  });
   </script>
 </body>
 </html>
