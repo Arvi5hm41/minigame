@@ -9,7 +9,7 @@
       background:black;
       color:white;
       font-family:"VT323",monospace;
-      font-size:5.2vw;
+      font-size: clamp(16px,4vw,36px);
       display:flex;
       align-items:center;
       justify-content:center;
@@ -30,32 +30,26 @@
     #text {
       white-space:pre-wrap;
       min-height:20vh;
-      font-size:5.2vw;
+      font-size: clamp(16px,4vw,36px);
       line-height:1.3;
     }
 
     #choices { margin-top:5vh; }
 
     .choice {
-      margin:3vw;
-      padding:2.3vw 5vw;
+      margin: 2vw;
+      padding: 2vw 4vw;
       border:1px solid white;
       display:inline-block;
       cursor:pointer;
-      font-size:5vw;
+      font-size: clamp(14px,4vw,32px);
       border-radius:8px;
       transition: all 0.2s ease-in-out;
-    }
-    .choice:hover {
-      color:black;
-      background:white;
-      box-shadow:0 0 15px white;
+      animation: glow 2s infinite alternate;
     }
     .choice:active {
-      color:black;
-      background:white;
-      box-shadow:0 0 20px white;
       transform:scale(1.05);
+      box-shadow:0 0 20px white;
     }
 
     .glow { animation: glow 2s infinite alternate; }
@@ -94,11 +88,10 @@
 
     @media (max-width:600px) {
       body { font-size:5vw; }
-      #text { font-size:5vw; }
-      .choice { font-size:5vw; padding:3vw 6vw; }
+      #text { font-size:5vw; line-height:1.2; }
+      .choice { font-size:5vw; padding:3vw 6vw; margin:2vw; }
     }
 
-    /* Fullscreen button */
     #fullscreen-btn {
       position: fixed;
       top: 10px;
@@ -158,6 +151,15 @@
     ["The final step reveals your essence — what guides you?","Discipline","Freedom","Devotion","Transcendence"]
   ];
 
+  // Map choices to archetype indices for deterministic paths
+  const CHOICE_TO_ARCHETYPE = [
+    [0,3,2,7], // question 0
+    [0,4,2,7], // question 1
+    [0,4,2,7], // question 2
+    [0,1,2,7], // question 3
+    [0,1,2,7]  // question 4
+  ];
+
   function typeText(str,cb){
     busy=true;text.innerHTML="";
     let i=0;
@@ -211,7 +213,13 @@
   }
 
   function finish(){
-    const archetype=ARCHETYPES[Math.floor(Math.random()*ARCHETYPES.length)];
+    // Sum the mapped choice indices to determine archetype
+    let sumIndex=0;
+    for(let lvl=0; lvl<currentPath.length; lvl++){
+      sumIndex += CHOICE_TO_ARCHETYPE[lvl][currentPath[lvl]];
+    }
+    const archetype = ARCHETYPES[sumIndex % ARCHETYPES.length];
+
     clearChoices();
     text.innerHTML = ""; 
 
@@ -276,4 +284,3 @@
   </script>
 </body>
 </html>
-
