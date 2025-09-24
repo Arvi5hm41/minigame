@@ -172,15 +172,25 @@
     [0,1,2,7]
   ];
 
-  function typeText(str,cb){
-    busy=true;text.innerHTML="";
-    let i=0;
-    function step(){
-      if(i<str.length){text.innerHTML+=str[i++];setTimeout(step,30);}
-      else{busy=false;if(cb)cb();}
+  // Modified typeText to accept optional lineHeight
+  function typeText(str, cb, lineHeight = "1.4") {
+    busy = true;
+    text.innerHTML = "";
+    text.style.lineHeight = lineHeight; // set custom line height
+    let i = 0;
+    function step() {
+      if (i < str.length) {
+        text.innerHTML += str[i++];
+        setTimeout(step, 30);
+      } else {
+        busy = false;
+        if (cb) cb();
+        text.style.lineHeight = "1.4"; // reset after typing
+      }
     }
     step();
   }
+
   function clearChoices(){choices.innerHTML="";}
 
   function showChoices(opts){
@@ -272,10 +282,11 @@
   function startGame(){
     currentPath=[];currentLevel=0;
     const intro="📲 A message flickers to life...\n\nA presence asks, with patience carved in centuries:\n\n'Do you dare to tread the path of fivefold questions?'";
+    // Reduced line spacing for intro
     typeText(intro,()=>showChoices([
       "Yes — I step forth.",
       "No — I turn away."
-    ]));
+    ]), "1.1");
   }
 
   (function spawnPixels(){
@@ -306,4 +317,3 @@
   </script>
 </body>
 </html>
-
