@@ -2,318 +2,413 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Mystic Path Minigame</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080c10">
+  <title>Mystic Path: Discover Your Archetype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
   <style>
+    :root {
+      color-scheme: dark;
+      font-family: "VT323", monospace;
+      background: #080c10;
+      color: #e9f1ec;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+
+    * { box-sizing: border-box; }
+
     body {
-      background:black;
-      color:white;
-      font-family:"VT323",monospace;
-      font-size: clamp(16px,2.5vw,28px);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      height:100vh;
-      margin:0;
-      overflow:hidden;
+      min-height: 100vh;
+      min-height: 100svh;
+      margin: 0;
+      padding: 4.5rem 1rem 2rem;
+      display: grid;
+      place-items: center;
+      overflow-x: hidden;
+      background: #080c10;
+      color: #e9f1ec;
+      font-size: clamp(1.125rem, 2.5vw, 1.5rem);
     }
 
     #game {
-      width:90vw;
-      height:90vh;
-      padding:5vw;
-      text-align:center;
-      position:relative;
-      z-index:2;
+      position: relative;
+      z-index: 2;
+      width: min(100%, 880px);
+      padding: clamp(1.5rem, 5vw, 3.5rem);
+      text-align: center;
+      background: #111820;
+      border-top: 3px solid #85e5b7;
+    }
 
-      display: flex;
-      flex-direction: column;
-      justify-content: center; /* vertical centering */
-      align-items: center;     /* horizontal centering */
+    .game-header { margin-bottom: clamp(2rem, 6vh, 4rem); }
+    .game-header h1 {
+      margin: 0;
+      color: #a5f0c8;
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 400;
+      letter-spacing: .06em;
+    }
+    .game-header p {
+      margin: .25rem 0 0;
+      color: #a6b6b0;
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+    }
+
+    #progress {
+      width: min(100%, 520px);
+      margin: 0 auto 1.75rem;
+      text-align: left;
+    }
+    #progress[hidden] { display: none; }
+    #progress-label { margin: 0 0 .45rem; color: #a6b6b0; }
+    #progress-track { height: .5rem; overflow: hidden; background: #28352f; }
+    #progress-fill {
+      display: block;
+      width: 0;
+      height: 100%;
+      background: #85e5b7;
+      transition: width .25s ease;
     }
 
     #text {
+      display: grid;
+      place-items: center;
+      min-height: 8rem;
+      max-width: 34ch;
+      margin: 0 auto;
+      font-size: clamp(1.5rem, 4vw, 2.75rem);
+      line-height: 1.25;
       white-space: pre-wrap;
-      font-size: 4.5vw; /* same as result description */
-      line-height:1.4;
-      text-align: center;
-
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
     }
 
-    #choices { 
-      margin-top:5vh; 
+    #choices {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: .75rem;
+      width: min(100%, 700px);
+      margin: clamp(1.5rem, 4vh, 2.5rem) auto 0;
     }
 
     .choice {
-      margin: 2vw;
-      padding: 2vw 4vw;
-      border:1px solid white;
-      display:inline-block;
-      cursor:pointer;
-      font-size: clamp(14px,3vw,24px);
-      border-radius:8px;
-      transition: all 0.2s ease-in-out;
-      animation: glow 1.5s infinite alternate;
+      min-height: 3.75rem;
+      padding: .85rem 1rem;
+      border: 1px solid #42544e;
+      border-radius: 3px;
+      background: #172129;
+      color: inherit;
+      font: inherit;
+      font-size: clamp(1.125rem, 2.5vw, 1.5rem);
+      line-height: 1.15;
+      cursor: pointer;
+      transition: background-color .15s ease, border-color .15s ease, transform .15s ease;
     }
-    .choice:active {
-      transform:scale(1.05);
-      box-shadow:0 0 20px white;
+    .choice:hover {
+      transform: translateY(-2px);
+      border-color: #85e5b7;
+      background: #202d32;
     }
-
-    .glow { animation: glow 1.5s infinite alternate; }
-    @keyframes glow {
-      from { text-shadow:0 0 4px white; }
-      to   { text-shadow:0 0 20px white; }
-    }
-
-    .pixel {
-      position:absolute;
-      width:3px;
-      height:3px;
-      background:white;
-      opacity:0.6;
-      z-index:1;
-      border-radius:50%;
-      animation: twinkle 3s infinite alternate;
-    }
-    @keyframes twinkle {
-      from { opacity:0.2; transform:scale(1); }
-      to   { opacity:1; transform:scale(1.5); }
+    .choice:focus-visible, #fullscreen-btn:focus-visible {
+      outline: 3px solid #a5f0c8;
+      outline-offset: 4px;
     }
 
     .symbol {
-      font-size: 15vw;
-      margin: 20px 0;
-      animation: pulse 3s infinite alternate;
+      margin: 0 0 .5rem;
+      color: #a5f0c8;
+      font-size: clamp(4rem, 12vw, 7rem);
+      line-height: 1;
+      animation: reveal .45s ease-out both;
     }
-    @keyframes pulse {
-      from { text-shadow: 0 0 5px white, 0 0 10px white; }
-      to   { text-shadow: 0 0 20px white, 0 0 40px white; }
+    .result-title {
+      margin: 0;
+      color: #a5f0c8;
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      font-weight: 400;
+      line-height: 1.1;
+      animation: reveal .45s .08s ease-out both;
     }
-
-    .result-title { font-size: 6vw; margin: 10px 0; }
-    .result-desc { font-size: 4.5vw; margin-top: 10px; line-height: 1.4; }
-
-    @media (max-width:600px) {
-      body { font-size: clamp(16px,5vw,22px); }
-      #text { font-size: 5vw; line-height: 1.4; }
-      .choice { font-size: clamp(14px,5vw,20px); padding:3vw 6vw; margin:2vw; }
-      #fullscreen-btn { font-size: 6vw; }
+    .result-desc {
+      margin: 1rem auto 0;
+      max-width: 42ch;
+      color: #d1ddd6;
+      font-size: clamp(1.25rem, 3vw, 1.75rem);
+      line-height: 1.4;
+      animation: reveal .45s .16s ease-out both;
+    }
+    @keyframes reveal {
+      from { opacity: 0; transform: translateY(.5rem); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     #fullscreen-btn {
       position: fixed;
-      top: 10px;
-      right: 10px;
-      background: rgba(255,255,255,0.1);
-      border: 1px solid white;
-      color: white;
-      padding: 6px 12px;
-      font-size: 4vw;
+      z-index: 3;
+      top: .75rem;
+      right: .75rem;
+      min-width: 2.75rem;
+      min-height: 2.75rem;
+      border: 1px solid #42544e;
+      border-radius: 3px;
+      background: #111820;
+      color: #a5f0c8;
+      font: inherit;
+      font-size: 1.5rem;
       cursor: pointer;
-      z-index: 9999;
-      border-radius: 6px;
-      transition: all 0.2s ease-in-out;
     }
-    #fullscreen-btn:hover, #fullscreen-btn:active {
-      background: white;
-      color: black;
-      box-shadow: 0 0 10px white;
+
+    .pixel {
+      position: fixed;
+      z-index: 1;
+      width: 2px;
+      height: 2px;
+      border-radius: 50%;
+      background: #d7ffe7;
+      opacity: .5;
+      pointer-events: none;
+      animation: twinkle 4s infinite alternate;
+    }
+    @keyframes twinkle {
+      from { opacity: .15; transform: scale(1); }
+      to { opacity: .7; transform: scale(1.5); }
+    }
+
+    @media (max-width: 560px) {
+      body { padding-inline: .75rem; }
+      #game { padding: 1.5rem 1rem; }
+      .game-header { margin-bottom: 2rem; }
+      #text { min-height: 7rem; }
+      #choices { grid-template-columns: 1fr; margin-top: 1.25rem; }
+      .choice { min-height: 3.25rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+      }
     }
   </style>
 </head>
 <body>
-  <button id="fullscreen-btn">⛶</button>
-  <div id="game">
-    <div id="text"></div>
-    <div id="choices"></div>
-  </div>
+  <main id="game">
+    <header class="game-header">
+      <h1>Mystic Path</h1>
+      <p>Five questions. One path through the stars.</p>
+    </header>
+    <section id="progress" aria-label="Quiz progress" hidden>
+      <p id="progress-label">Question 1 of 5</p>
+      <div id="progress-track" role="progressbar" aria-label="Question progress" aria-valuemin="1" aria-valuemax="5" aria-valuenow="1">
+        <span id="progress-fill"></span>
+      </div>
+    </section>
+    <div id="text" aria-live="polite" aria-atomic="true"></div>
+    <div id="choices" role="group" aria-label="Available choices"></div>
+  </main>
+  <button id="fullscreen-btn" type="button" aria-label="Enter fullscreen" title="Enter fullscreen">⛶</button>
+
   <script>
-  const text=document.getElementById("text");
-  const choices=document.getElementById("choices");
-  let busy=false,currentPath=[],currentLevel=0;
+    const text = document.getElementById("text");
+    const choices = document.getElementById("choices");
+    const progress = document.getElementById("progress");
+    const progressLabel = document.getElementById("progress-label");
+    const progressTrack = document.getElementById("progress-track");
+    const progressFill = document.getElementById("progress-fill");
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let busy = false;
+    let currentPath = [];
+    let currentLevel = 0;
+    let screen = "intro";
 
-  const ARCHETYPES = [
-    { key:"Stoic Swordsman", title:"⚔ The Stoic Swordsman", symbol:"⚔",
-      desc:"Steel is a mirror of the soul. You sever illusions with clarity and solemn resolve." },
-    { key:"Trickster Rogue", title:"🃏 The Trickster Rogue", symbol:"🃏",
-      desc:"Rules are chains. You laugh as you slip them, turning fate into a jest." },
-    { key:"Loyal Protector", title:"🛡 The Loyal Protector", symbol:"🛡",
-      desc:"Your heart is both flame and shield. You endure so others may stand." },
-    { key:"Eternal Scholar", title:"📜 The Eternal Scholar", symbol:"📜",
-      desc:"The halls of truth have no end. You wander them eternally, hungering for wisdom." },
-    { key:"Shadow Wanderer", title:"🌑 The Shadow Wanderer", symbol:"🌑",
-      desc:"You walk unseen, carrying silence and scars as companions." },
-    { key:"Burning Hero", title:"🔥 The Burning Hero", symbol:"🔥",
-      desc:"Passion blazes in you. Even gods cannot snuff your fire." },
-    { key:"Silent Oracle", title:"🔮 The Silent Oracle", symbol:"🔮",
-      desc:"You perceive the whispers between moments. Your silence speaks louder than prophecy." },
-    { key:"Cosmic Dreamer", title:"🌌 The Cosmic Dreamer", symbol:"🌌",
-      desc:"Worlds bloom from your thoughts. You shape infinity with your visions." }
-  ];
+    const ARCHETYPES = [
+      { title: "⚔ The Stoic Swordsman", symbol: "⚔", desc: "Steel is a mirror of the soul. You sever illusions with clarity and solemn resolve." },
+      { title: "🃏 The Trickster Rogue", symbol: "🃏", desc: "Rules are chains. You laugh as you slip them, turning fate into a jest." },
+      { title: "🛡 The Loyal Protector", symbol: "🛡", desc: "Your heart is both flame and shield. You endure so others may stand." },
+      { title: "📜 The Eternal Scholar", symbol: "📜", desc: "The halls of truth have no end. You wander them eternally, hungering for wisdom." },
+      { title: "🌑 The Shadow Wanderer", symbol: "🌑", desc: "You walk unseen, carrying silence and scars as companions." },
+      { title: "🔥 The Burning Hero", symbol: "🔥", desc: "Passion blazes in you. Even gods cannot snuff your fire." },
+      { title: "🔮 The Silent Oracle", symbol: "🔮", desc: "You perceive the whispers between moments. Your silence speaks louder than prophecy." },
+      { title: "🌌 The Cosmic Dreamer", symbol: "🌌", desc: "Worlds bloom from your thoughts. You shape infinity with your visions." }
+    ];
 
-  const QUESTIONS=[
-    ["Four roads stretch before you — which stirs your soul?","Strength","Wisdom","Loyalty","Dreams"],
-    ["Steel or shadow, which do you trust more?","Blade","Hidden paths","Shared oath","Cosmic vision"],
-    ["The night whispers — do you seek?","Clarity","Mysteries","Companions","Infinite skies"],
-    ["Before battle, what heart do you carry?","Resolve","Cunning","Sacrifice","Imagination"],
-    ["The final step reveals your essence — what guides you?","Discipline","Freedom","Devotion","Transcendence"]
-  ];
+    const QUESTIONS = [
+      ["Four roads stretch before you. Which stirs your soul?", "Strength", "Wisdom", "Hidden paths", "Dreams"],
+      ["A guarded passage blocks your way. How do you cross?", "Challenge it", "Slip through unseen", "Protect your companions", "Outwit the guard"],
+      ["The night whispers. What do you seek?", "A prophecy", "Forgotten knowledge", "A companion's voice", "A vision of the stars"],
+      ["Before battle, what heart do you carry?", "Resolve", "Cunning", "Sacrifice", "Passion"],
+      ["The final step reveals your essence. What guides you?", "Discipline", "Freedom", "Prophecy", "Flame"]
+    ];
 
-  const CHOICE_TO_ARCHETYPE = [
-    [0,3,2,7],
-    [0,4,2,7],
-    [0,4,2,7],
-    [0,1,2,7],
-    [0,1,2,7]
-  ];
+    const CHOICE_TO_ARCHETYPE = [
+      [0, 3, 4, 7],
+      [0, 4, 2, 1],
+      [6, 3, 2, 7],
+      [0, 1, 2, 5],
+      [0, 1, 6, 5]
+    ];
 
-  // Modified typeText to accept optional lineHeight
-  function typeText(str, cb, lineHeight = "1.4") {
-    busy = true;
-    text.innerHTML = "";
-    text.style.lineHeight = lineHeight; // set custom line height
-    let i = 0;
-    function step() {
-      if (i < str.length) {
-        text.innerHTML += str[i++];
-        setTimeout(step, 30);
-      } else {
+    function typeText(str, cb) {
+      busy = true;
+      text.textContent = "";
+      text.setAttribute("aria-busy", "true");
+      if (reducedMotion) {
+        text.textContent = str;
         busy = false;
+        text.setAttribute("aria-busy", "false");
         if (cb) cb();
-        text.style.lineHeight = "1.4"; // reset after typing
+        return;
       }
+      let i = 0;
+      function step() {
+        if (i < str.length) {
+          text.textContent += str[i++];
+          setTimeout(step, 18);
+        } else {
+          busy = false;
+          text.setAttribute("aria-busy", "false");
+          if (cb) cb();
+        }
+      }
+      step();
     }
-    step();
-  }
 
-  function clearChoices(){choices.innerHTML="";}
+    function clearChoices() {
+      choices.replaceChildren();
+    }
 
-  function showChoices(opts){
-    clearChoices();
-    opts.forEach((o,i)=>{
-      const div=document.createElement("div");
-      div.className="choice glow";
-      div.textContent=o;
-      div.onclick=()=>{ if(!busy) handleChoice(i,o); };
-      choices.appendChild(div);
-    });
-  }
+    function showChoices(options) {
+      clearChoices();
+      options.forEach((option, i) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "choice";
+        button.textContent = option;
+        button.addEventListener("click", () => {
+          if (!busy) handleChoice(i);
+        });
+        choices.appendChild(button);
+      });
+    }
 
-  function handleChoice(i,label){
-    // Intro question
-    if(currentLevel===0 && label.startsWith("No")){
-        clearChoices();
-        typeText("⚡ The connection severs. The path remains closed.\n\n(Refresh to try again.)");
+    function handleChoice(i) {
+      if (screen === "intro") {
+        if (i === 0) {
+          screen = "question";
+          currentLevel = 0;
+          navigate();
+        } else {
+          screen = "declined";
+          typeText("⚡ The path can wait until you are ready.", () => showChoices(["Start over"]));
+        }
         return;
-    }
-    if(currentLevel===0 && label.startsWith("Yes")){
-        currentPath.push(i);
-        currentLevel++; // move to first actual question
-        navigate();
-        return;
-    }
+      }
 
-    // Restart / End at result
-    if(label.startsWith("Restart")){
+      if (screen === "declined" || screen === "ended") {
         startGame();
         return;
-    }
-    if(label.startsWith("End")){
-        clearChoices();
-        typeText("🌙 The journey sleeps, until another soul awakens it.");
+      }
+
+      if (screen === "result") {
+        if (i === 0) {
+          startGame();
+        } else {
+          screen = "ended";
+          typeText("🌙 The journey sleeps, until another soul awakens it.", () => showChoices(["Start again"]));
+        }
         return;
-    }
+      }
 
-    // Normal questions
-    currentPath.push(i);
-    currentLevel++;
-    if(currentLevel >= QUESTIONS.length){
+      currentPath.push(i);
+      if (currentLevel === QUESTIONS.length - 1) {
         finish();
-    } else {
+      } else {
+        currentLevel++;
         navigate();
+      }
     }
-  }
 
-  function navigate(){
-    clearChoices();
-    const q=QUESTIONS[currentLevel];
-    typeText(q[0],()=>showChoices(q.slice(1)));
-  }
-
-  function finish(){
-    let sumIndex=0;
-    for(let lvl=0; lvl<currentPath.length; lvl++){
-      sumIndex += CHOICE_TO_ARCHETYPE[lvl][currentPath[lvl]];
+    function navigate() {
+      screen = "question";
+      clearChoices();
+      progress.hidden = false;
+      progressLabel.textContent = `Question ${currentLevel + 1} of ${QUESTIONS.length}`;
+      progressTrack.setAttribute("aria-valuenow", currentLevel + 1);
+      progressFill.style.width = `${((currentLevel + 1) / QUESTIONS.length) * 100}%`;
+      const question = QUESTIONS[currentLevel];
+      typeText(question[0], () => showChoices(question.slice(1)));
     }
-    const archetype = ARCHETYPES[sumIndex % ARCHETYPES.length];
 
-    clearChoices();
-    text.innerHTML = ""; 
+    function finish() {
+      const scores = Array(ARCHETYPES.length).fill(0);
+      const answers = currentPath.map((choice, level) => CHOICE_TO_ARCHETYPE[level][choice]);
+      answers.forEach((archetype) => scores[archetype]++);
+      const highestScore = Math.max(...scores);
+      const winner = answers.slice().reverse().find((archetype) => scores[archetype] === highestScore);
+      const archetype = ARCHETYPES[winner];
 
-    const symbolDiv = document.createElement("div");
-    symbolDiv.className = "symbol glow";
-    symbolDiv.textContent = archetype.symbol;
-    text.appendChild(symbolDiv);
+      screen = "result";
+      progress.hidden = true;
+      clearChoices();
+      text.replaceChildren();
 
-    setTimeout(() => {
-      const titleDiv = document.createElement("div");
-      titleDiv.className = "result-title glow";
-      titleDiv.textContent = "✨ " + archetype.title + " ✨";
-      text.appendChild(titleDiv);
-
-      setTimeout(() => {
-        const descDiv = document.createElement("div");
-        descDiv.className = "result-desc";
-        descDiv.textContent = archetype.desc;
-        text.appendChild(descDiv);
-
-        setTimeout(() => {
-          showChoices(["Restart the journey","End"]);
-        }, 1000);
-      }, 1000);
-    }, 1000);
-  }
-
-  function startGame(){
-    currentPath=[];currentLevel=0;
-    const intro="📲 A message flickers to life...\n\nA presence asks, with patience carved in centuries:\n\n'Do you dare to tread the path of fivefold questions?'";
-    // Reduced line spacing for intro
-    typeText(intro,()=>showChoices([
-      "Yes — I step forth.",
-      "No — I turn away."
-    ]), "1.1");
-  }
-
-  (function spawnPixels(){
-    for(let i=0;i<120;i++){
-      const p=document.createElement("div");
-      p.className="pixel";
-      p.style.left=Math.random()*100+"vw";
-      p.style.top=Math.random()*100+"vh";
-      p.style.animationDuration=(2+Math.random()*4)+"s";
-      p.style.animationDelay=(Math.random()*5)+"s";
-      document.body.appendChild(p);
+      const symbol = document.createElement("div");
+      symbol.className = "symbol";
+      symbol.textContent = archetype.symbol;
+      const title = document.createElement("h2");
+      title.className = "result-title";
+      title.textContent = `✨ ${archetype.title} ✨`;
+      const description = document.createElement("p");
+      description.className = "result-desc";
+      description.textContent = archetype.desc;
+      text.append(symbol, title, description);
+      showChoices(["Restart the journey", "End"]);
     }
-  })();
 
-  startGame();
+    function startGame() {
+      currentPath = [];
+      currentLevel = 0;
+      screen = "intro";
+      progress.hidden = true;
+      clearChoices();
+      const intro = "📲 A message flickers to life...\n\nA presence asks, with patience carved in centuries:\n\n'Do you dare to tread the path of fivefold questions?'";
+      typeText(intro, () => showChoices(["Yes, I step forth.", "No, I turn away."]));
+    }
 
-  // Fullscreen toggle
-  const fsBtn=document.getElementById("fullscreen-btn");
-  fsBtn.addEventListener("click",()=>{
-    if(!document.fullscreenElement){
-      document.documentElement.requestFullscreen().catch(err=>{
-        alert(`Error: ${err.message}`);
+    function spawnPixels() {
+      for (let i = 0; i < 72; i++) {
+        const pixel = document.createElement("span");
+        pixel.className = "pixel";
+        pixel.setAttribute("aria-hidden", "true");
+        pixel.style.left = `${Math.random() * 100}vw`;
+        pixel.style.top = `${Math.random() * 100}vh`;
+        pixel.style.animationDuration = `${2 + Math.random() * 4}s`;
+        pixel.style.animationDelay = `${Math.random() * 5}s`;
+        document.body.appendChild(pixel);
+      }
+    }
+
+    const fullscreenButton = document.getElementById("fullscreen-btn");
+    if (!document.fullscreenEnabled || !document.documentElement.requestFullscreen) fullscreenButton.hidden = true;
+    fullscreenButton.addEventListener("click", () => {
+      const action = document.fullscreenElement
+        ? document.exitFullscreen()
+        : document.documentElement.requestFullscreen();
+      action.catch(() => {
+        fullscreenButton.title = "Fullscreen is unavailable in this browser.";
       });
-    } else {
-      document.exitFullscreen();
-    }
-  });
+    });
+    document.addEventListener("fullscreenchange", () => {
+      const label = document.fullscreenElement ? "Exit fullscreen" : "Enter fullscreen";
+      fullscreenButton.setAttribute("aria-label", label);
+      fullscreenButton.title = label;
+    });
+
+    spawnPixels();
+    startGame();
   </script>
 </body>
 </html>
